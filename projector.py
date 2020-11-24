@@ -9,7 +9,7 @@ from torchvision import transforms
 from PIL import Image
 from tqdm import tqdm
 
-import lpips
+import lpips_
 from model import Generator
 
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         latent_mean = latent_out.mean(0)
         latent_std = ((latent_out - latent_mean).pow(2).sum() / n_mean_latent) ** 0.5
 
-    percept = lpips.PerceptualLoss(
+    percept = lpips_.PerceptualLoss(
         model="net-lin", net="vgg", use_gpu=device.startswith("cuda")
     )
 

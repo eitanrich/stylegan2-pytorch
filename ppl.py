@@ -5,7 +5,7 @@ from torch.nn import functional as F
 import numpy as np
 from tqdm import tqdm
 
-import lpips
+import lpips_
 from model import Generator
 
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     g.load_state_dict(ckpt["g_ema"])
     g.eval()
 
-    percept = lpips.PerceptualLoss(
+    percept = lpips_.PerceptualLoss(
         model="net-lin", net="vgg", use_gpu=device.startswith("cuda")
     )
 

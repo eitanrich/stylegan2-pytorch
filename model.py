@@ -363,6 +363,33 @@ class ToRGB(nn.Module):
         return out
 
 
+class Code2Style(nn.Module):
+    def __init__(self, size, code_dim, style_dim, n_mlp, n_groups=1):
+        super().__init__()
+        self.code_dim, self.style_dim, self.n_mlp, self.n_groups = code_dim, style_dim, n_mlp, n_groups
+        self.n_latent = int(math.log(size, 2)) * 2 - 2
+
+        self.stylers = []
+        assert n_groups == 1
+        for i in range(n_groups):
+            layers = [PixelNorm()]
+            for j in range(n_mlp):
+                in_dim = code_dim if j == 0 else style_dim
+                layers.append(EqualLinear(in_dim, style_dim, activation='fused_lrelu'))
+            # self.stylers.append(nn.Sequential(*layers))
+            self.stylers = nn.Sequential(*layers)
+
+        print(self.stylers)
+
+    def forward(self, code):
+        k = int(math.ceil(self.n_latent / self.n_groups))
+        # styles = [styler(code).unsqueeze(1).repeat(1, k, 1) for styler in self.stylers]
+        styles = self.stylers(code).unsqueeze(1).repeat(1, k, 1)
+        # return torch.stack(styles)[:self.n_latent]
+        return styles
+
+
+
 class Generator(nn.Module):
     def __init__(
         self,
@@ -493,33 +520,35 @@ class Generator(nn.Module):
                     getattr(self.noises, f'noise_{i}') for i in range(self.num_layers)
                 ]
 
-        if truncation < 1:
-            style_t = []
+        # if truncation < 1:
+        #     style_t = []
+        #
+        #     for style in styles:
+        #         style_t.append(
+        #             truncation_latent + truncation * (style - truncation_latent)
+        #         )
+        #
+        #     styles = style_t
+        #
+        # if len(styles) < 2:
+        #     inject_index = self.n_latent
+        #
+        #     if styles[0].ndim < 3:
+        #         latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
+        #
+        #     else:
+        #         latent = styles[0]
+        #
+        # else:
+        #     if inject_index is None:
+        #         inject_index = random.randint(1, self.n_latent - 1)
+        #
+        #     latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
+        #     latent2 = styles[1].unsqueeze(1).repeat(1, self.n_latent - inject_index, 1)
+        #
+        #     latent = torch.cat([latent, latent2], 1)
 
-            for style in styles:
-                style_t.append(
-                    truncation_latent + truncation * (style - truncation_latent)
-                )
-
-            styles = style_t
-
-        if len(styles) < 2:
-            inject_index = self.n_latent
-
-            if styles[0].ndim < 3:
-                latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
-
-            else:
-                latent = styles[0]
-
-        else:
-            if inject_index is None:
-                inject_index = random.randint(1, self.n_latent - 1)
-
-            latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
-            latent2 = styles[1].unsqueeze(1).repeat(1, self.n_latent - inject_index, 1)
-
-            latent = torch.cat([latent, latent2], 1)
+        latent = styles
 
         out = self.input(latent)
         out = self.conv1(out, latent[:, 0], noise=noise[0])

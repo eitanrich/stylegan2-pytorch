@@ -83,8 +83,8 @@ def g_nonsaturating_loss(fake_pred):
     return loss
 
 
-def perceptual_and_l1_loss(real_img, rec_img, real_rep, rec_rep, lambda_l1=1.0):
-    return F.mse_loss(real_rep, rec_rep) + lambda_l1 * F.l1_loss(real_img, rec_img)
+def perceptual_and_l1_loss(real_img, rec_img, real_rep, rec_rep, lambda_l1=0.5):
+    return F.mse_loss(200.0*real_rep, 200.0*rec_rep) + lambda_l1 * F.l1_loss(real_img, rec_img)
 
 
 # def g_path_regularize(fake_img, latents, mean_path_length, decay=0.01):
@@ -175,35 +175,31 @@ def train(args, loader, generator, code2style, c2s_optim, device, pf):
                 )
             )
 
-            if i % 100 == 0:
+            if i % 250 == 0:
                 utils.save_image(
                     real_img,
-                    f"sample/real_{str(i).zfill(6)}.png",
+                    f"sample/real_{str(i).zfill(6)}.jpg",
                     nrow=4,
                     normalize=True,
                     range=(-1, 1),
                 )
                 utils.save_image(
                     rec_img,
-                    f"sample/rec_{str(i).zfill(6)}.png",
+                    f"sample/rec_{str(i).zfill(6)}.jpg",
                     nrow=4,
                     normalize=True,
                     range=(-1, 1),
                 )
-        #
-        #     if i % 10000 == 0:
-        #         torch.save(
-        #             {
-        #                 "g": g_module.state_dict(),
-        #                 "d": d_module.state_dict(),
-        #                 "g_ema": g_ema.state_dict(),
-        #                 "g_optim": g_optim.state_dict(),
-        #                 "d_optim": d_optim.state_dict(),
-        #                 "args": args,
-        #                 "ada_aug_p": ada_aug_p,
-        #             },
-        #             f"checkpoint/{str(i).zfill(6)}.pt",
-        #         )
+
+            if i % 2000 == 0:
+                torch.save(
+                    {
+                        "c2s": c2s_module.state_dict(),
+                        "c2s_optim": c2s_optim.state_dict(),
+                        "args": args,
+                    },
+                    f"checkpoint/c2s_{str(i).zfill(6)}.pt",
+                )
 
 
 if __name__ == "__main__":
